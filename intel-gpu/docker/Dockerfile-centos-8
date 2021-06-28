@@ -1,0 +1,69 @@
+FROM vpl-cpu:centos8 AS build
+
+WORKDIR /build
+ENV TZ=america/los_angeles
+
+RUN yum install -y \
+    autoconf \
+    automake \
+    binutils \ 
+    cmake \
+    gcc \
+    gcc-c++ \ 
+    git \
+    libarchive \
+    libtool \
+    libdrm-devel \
+    make \
+    pkgconfig \
+    which
+
+ENV VPL_ROOT=/opt/intel/onevpl
+ENV LD_LIBRARY_PATH=${VPL_ROOT}/lib:${LD_LIBRARY_PATH}
+ENV PKG_CONFIG_PATH=${VPL_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
+ENV LIBVA_DRIVER_NAME=iHD
+ENV LIBVA_DRIVER_PATH=${VPL_ROOT}/lib/dri
+
+COPY libva /build/libva
+RUN cd libva && \
+    ./autogen.sh --prefix=${VPL_ROOT} --libdir=${VPL_ROOT}/lib && \
+    make -j$(nproc) && \
+    make install 
+
+COPY gmmlib /build/gmmlib
+RUN cd gmmlib && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=${VPL_ROOT} -DCMAKE_BUILD_TYPE=Release .. && \
+    make -j$(nproc) && \
+    make install 
+
+COPY media-driver /build/media-driver
+RUN cd media-driver && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=${VPL_ROOT} -DCMAKE_BUILD_TYPE=Release -DENABLE_KERNELS=ON -DENABLE_NONFREE_KERNELS=ON -DBUILD_CMRTLIB=ON .. && \
+    make -j$(nproc) && \
+    make install 
+
+COPY oneVPL-intel-gpu /build/oneVPL-intel-gpu
+RUN cd oneVPL-intel-gpu && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_INSTALL_PREFIX=${VPL_ROOT} .. && \
+    make -j$(nproc) && \
+    make install 
+
+
+FROM centos:centos8
+LABEL Description="This is the CentOS 8 GPU reference implementation image for the oneAPI Video Processing Library API"
+
+RUN yum install -y libdrm
+ 
+ARG VPL_ROOT=/opt/intel/onevpl
+ENV PATH=${VPL_ROOT}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${VPL_ROOT}/lib:${VPL_ROOT}/lib64:${LD_LIBRARY_PATH}
+ENV PKG_CONFIG_PATH=${VPL_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
+ENV LIBVA_DRIVER_NAME=iHD
+ENV LIBVA_DRIVER_PATH=${VPL_ROOT}/lib/dri
+
+COPY --from=build ${VPL_ROOT} ${VPL_ROOT}
