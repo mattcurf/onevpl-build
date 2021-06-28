@@ -9,19 +9,18 @@ https://software.intel.com/content/www/us/en/develop/articles/oneapi-repo-instru
 
 *Note*: These instructions assume that Docker is installed and correctly configured to work with any network configuration (e.g. corporate proxies)
 
-### Checking out the sources
-
-#### Step 1: Install repo tool
+### Install repo tool
 https://source.android.com/setup/develop#installing-repo
 
-#### Step 2: Initialize and sync repo for oneVPL
+### Initialize and sync repo
 
+This step will clone all of the oneVPL related repos specified at https://github.com/mattcurf/onevpl-repo/blob/main/default.xml 
 ```bash
 $ repo init -u https://github.com/mattcurf/onevpl-repo
 $ repo sync
 ```
 
-### For Ubuntu 20.04
+### Building Ubuntu 20.04 image
 
 The following will build oneVPL docker images for dispatcher, CPU and GPU support
 ```bash
@@ -29,7 +28,7 @@ $ cd build
 $ ./build-ubuntu20.04.sh
 ```
 
-### For Centos 8 
+### Building Centos 8 image
 
 The following will build oneVPL docker images for dispatcher, CPU and GPU support
 ```bash
